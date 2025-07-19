@@ -1,0 +1,5 @@
+.git
+*.pem
+*.md
+testdata/
+*.log
