@@ -14,21 +14,24 @@ type UrlCreationRequest struct {
 	UserId  string `json:"user_id" binding:"required"`  // Field for the user ID, required in JSON
 }
 
-// Handler function to create a short URL
+// Handler function to create a short URL using PostgreSQL
 func CreateShortUrl(c *gin.Context) {
 	var creationRequest UrlCreationRequest // Declare a variable to hold the incoming request data
 
 	// Bind the incoming JSON to the UrlCreationRequest struct and check for errors
 	if err := c.ShouldBindJSON(&creationRequest); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()}) // Return a 400 error if binding fails
-		return // Exit the function if there is an error
+		return                                                     // Exit the function if there is an error
 	}
 
 	// Generate a short URL using the long URL and user ID
 	shortUrl := shortener.GenerateShortLink(creationRequest.LongUrl, creationRequest.UserId)
 
-	// Save the mapping of the short URL to the original long URL and user ID
-	store.SaveUrlMapping(shortUrl, creationRequest.LongUrl, creationRequest.UserId)
+	// Save mapping in PostgreSQL
+	if err := store.SaveUrlMappingMySQL(shortUrl, creationRequest.LongUrl); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to save URL mapping"})
+		return
+	}
 
 	host := "http://localhost:9808/" // Define the host URL for the shortener service
 
@@ -39,9 +42,21 @@ func CreateShortUrl(c *gin.Context) {
 	})
 }
 
-// Handler function to redirect from a short URL to the original long URL
+// Handler function to redirect using PostgreSQL
 func HandleShortUrlRedirect(c *gin.Context) {
-	shortUrl := c.Param("shortUrl")           // Get the short URL parameter from the request path
+	shortUrl := c.Param("shortUrl")                  // Get the short URL parameter from the request path
 	initialUrl := store.RetrieveInitialUrl(shortUrl) // Retrieve the original long URL from the store
-	c.Redirect(302, initialUrl)               // Redirect the client to the original long URL with a 302 status
+	if initialUrl == "" {
+		// Fallback to PostgreSQL if not found in Redis
+		var err error
+		initialUrl, err = store.RetrieveInitialUrlMySQL(shortUrl)
+		if err != nil {
+			c.JSON(http.StatusNotFound, gin.H{"error": "Short URL not found"}) // Return a 404 error if the short URL is not found
+			return                                                             // Exit the function if there is an error
+		}
+		// Optionally cache in Redis for future requests
+		store.SaveUrlMapping(shortUrl, initialUrl, "")
+	}
+
+	c.Redirect(302, initialUrl) // Redirect the client to the original long URL with a 302 status
 }

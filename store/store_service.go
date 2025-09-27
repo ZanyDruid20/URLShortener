@@ -2,22 +2,26 @@ package store
 
 import (
 	"context"
+	"database/sql"
 	"fmt"
 	"os"
 	"time"
 
 	"github.com/go-redis/redis/v8"
+	_ "github.com/go-sql-driver/mysql"
 )
 
 // we're defining the struct around redis
 type StorageService struct {
 	redisClient *redis.Client
+	db          *sql.DB
 }
 
 // we're declaring top level for the storage and the context
 var (
 	storeService = &StorageService{}
 	ctx          = context.Background()
+	db           *sql.DB
 )
 
 func init() {
@@ -70,4 +74,21 @@ func RetrieveInitialUrl(shortUrl string) string {
 	}
 	return result
 
+}
+
+func SetDB(database *sql.DB) {
+	db = database
+}
+
+func SaveUrlMappingMySQL(shortUrl, originalUrl string) error {
+	_, err := db.Exec(
+		"INSERT IGNORE INTO urls (short_url, original_url) VALUES (?, ?)", shortUrl, originalUrl)
+	return err
+}
+
+func RetrieveInitialUrlMySQL(shortUrl string) (string, error) {
+	var originalUrl string
+	err := db.QueryRow(
+		"SELECT original_url FROM urls WHERE short_url = ?", shortUrl).Scan(&originalUrl)
+	return originalUrl, err
 }

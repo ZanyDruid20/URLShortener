@@ -2,13 +2,17 @@ package main
 
 import (
 	"context"
+	"database/sql"
 	"fmt"
 	"os"
+	"time"
 
 	"github.com/ZanyDruid20/urlshortener/handler"
 	"github.com/ZanyDruid20/urlshortener/store"
+	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	"github.com/go-redis/redis/v8"
+	_ "github.com/go-sql-driver/mysql"
 	"github.com/joho/godotenv"
 )
 
@@ -41,7 +45,33 @@ func main() {
 	}
 	fmt.Println("Redis connected:", pong)
 
+	// Connect to MySQL
+	dbURL := os.Getenv("DATABASE_URL")
+	if dbURL == "" {
+		dbURL = "shortuser:shortpass@tcp(localhost:13306)/shortener"
+	}
+	db, err := sql.Open("mysql", dbURL)
+	if err != nil {
+		panic(fmt.Sprintf("Failed to connect to MySQL: %v", err))
+	}
+	defer db.Close()
+	fmt.Println("MySQL connected")
+
+	// Pass db to store
+	store.SetDB(db)
+
 	r := gin.Default()
+
+	// Add CORS middleware before your routes
+	r.Use(cors.New(cors.Config{
+		AllowOrigins:     []string{"*"},
+		AllowMethods:     []string{"GET", "POST", "OPTIONS"},
+		AllowHeaders:     []string{"Origin", "Content-Type", "Accept"},
+		ExposeHeaders:    []string{"Content-Length"},
+		AllowCredentials: true,
+		MaxAge:           12 * time.Hour,
+	}))
+
 	r.GET("/", func(c *gin.Context) {
 		c.JSON(200, gin.H{
 			"message": "Hey Go URL Shortener !",
@@ -69,9 +99,6 @@ func main() {
 	r.GET("/:shortUrl", func(c *gin.Context) {
 		handler.HandleShortUrlRedirect(c)
 	})
-
-	// Note that store initialization happens here
-	store.InitializeStore()
 
 	err = r.Run(":9808")
 	if err != nil {
