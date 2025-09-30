@@ -10,16 +10,17 @@ A simple, scalable URL shortener service built with Go, Gin, Redis, Docker, and 
 - RESTful API endpoints
 - Containerized with Docker and orchestrated with Docker Compose
 - Deployed on AWS EC2 (Amazon Linux 2023)
+- Persistent storage on AWS RDS
+
 
 ## Tech Stack
 
 - Go (Golang)
 - Gin Web Framework
 - Redis
-- MYSQL
+- MYSQL(AWS RDS)
 - Docker & Docker Compose
 - AWS EC2
-- AWS RDS 
 
 ## API Endpoints
 
