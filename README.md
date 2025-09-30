@@ -18,7 +18,7 @@ A simple, scalable URL shortener service built with Go, Gin, Redis, Docker, and 
 - Go (Golang)
 - Gin Web Framework
 - Redis
-- MYSQL(AWS RDS)
+- MySQL (AWS RDS)
 - Docker & Docker Compose
 - AWS EC2
 
