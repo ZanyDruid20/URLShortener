@@ -19,7 +19,7 @@ A simple, scalable URL shortener service built with Go, Gin, Redis, Docker, and 
 - MYSQL
 - Docker & Docker Compose
 - AWS EC2
-- AWS RDS (later phase coming soon)
+- AWS RDS 
 
 ## API Endpoints
 
