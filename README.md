@@ -1,6 +1,6 @@
 # URLShortener
 
-A simple, scalable URL shortener service built with Go, Gin, Redis, Docker, and deployed on AWS EC2.
+A simple, scalable URL shortener service built with Go, Gin, Redis, Docker, and deployed on AWS EC2 and database hosted on AWS RDS.
 
 ## Features
 
